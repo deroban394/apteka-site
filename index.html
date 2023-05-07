@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аптечна база</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark-theme {
+            background-color: #333;
+            color: #f1f1f1;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 100%;
+        }
+        input, select, button {
+            flex: 1;
+            padding: 10px;
+            margin: 5px;
+        }
+        input, select {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            color: #333;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+        .dark-theme input, .dark-theme select {
+            background-color: #444;
+            border-color: #555;
+            color: #f1f1f1;
+        }
+        button {
+            background-color: #4CAF50;
+            border: 1px solid #4CAF50;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .dark-theme button {
+            background-color: #555;
+            border-color: #666;
+        }
+        .dark-theme button:hover {
+            background-color: #666;
+        }
+        table {
+            border-collapse: collapse;
+            margin: 10px;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark-theme th, .dark-theme td {
+            border-color: #555;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .dark-theme th {
+            background-color: #555;
+        }
+        .highlight {
+            background-color: #ff5555;
+            color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Аптечна база</h1>
+        <button onclick="toggleTheme()">Перемкнути тему</button>
+        <div class="actions">
+            <input type="text" id="name" placeholder="Назва ліків" />
+            <input type="text" id="date" placeholder="Дата створення (00.00.0000)" />
+            <button onclick="addItem()">Додати ліки</button>
+        </div>
+        <div class="actions    </div>
+            <div class="actions">
+                <input type="text" id="order" placeholder="Замовлення" />
+                <input type="text" id="orderDate" placeholder="Дата замовлення (00.00.0000)" />
+                <button onclick="addOrder()">Додати замовлення</button>
+            </div>
+            <div class="actions">
+                <label for="sort">Сортувати за:</label>
+                <select id="sort" onchange="sortItems()">
+                    <option value="name">Назва</option>
+                    <option value="date">Дата</option>
+                </select>
+                <input type="text" id="search" placeholder="Пошук ліків та замовлень за назвою або датою" oninput="searchItems()" />
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Назва ліків</th>
+                        <th>Дата створення</th>
+                        <th>Замовлення</th>
+                        <th>Дата замовлення</th>
+                        <th>Видалити</th>
+                    </tr>
+                </thead>
+                <tbody id="items"></tbody>
+            </table>
+        </div>
+        <script>
+            let items = [];
+            let isDarkTheme = false;
+        
+            function toggleTheme() {
+                isDarkTheme = !isDarkTheme;
+                document.body.classList.toggle("dark-theme", isDarkTheme);
+            }
+        
+            function addItem() {
+                const name = document.getElementById("name").value;
+                const date = document.getElementById("date").value;
+        
+                items.push({ name, date, order: "", orderDate: "" });
+                renderItem(items[items.length - 1], items.length - 1);
+                document.getElementById("name").value = "";
+                document.getElementById("date").value = "";
+            }
+        
+            function addOrder() {
+                const order = document.getElementById("order").value;
+                const orderDate = document.getElementById("orderDate").value;
+        
+                items.push({ name: "", date: "", order, orderDate });
+                renderItem(items[items.length - 1], items.length - 1);
+                document.getElementById("order").value = "";
+                document.getElementById("orderDate").value = "";
+            }
+        
+            function sortItems() {
+                const sortBy = document.getElementById("sort").value;
+                items.sort((a, b) => {
+                    if (sortBy === "name") {
+                        return a.name.localeCompare(b.name);
+                    } else {
+                        return new Date(a.date) - new Date(b.date);
+                    }
+                });
+        
+                document.getElementById("items").innerHTML = "";
+                items.forEach(renderItem);
+            }
+        
+            function searchItems() {
+                const searchTerm = document.getElementById("search").value.toLowerCase();
+                document.getElementById("items").innerHTML = "";
+                items.forEach((item, index) => {
+                    if (item.name.toLowerCase().includes(searchTerm) || item.order.toLowerCase().includes(searchTerm)) {
+                        renderItem(item, index);
+                    }
+                });
+            }
+        
+            function renderItem(item, index) {
+                const row = document.createElement("tr");
+        
+                if (isItemExpired(item)) {
+                    row.classList.add("highlight");
+                }
+        
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${formatDate(item.date)}</td>
+                    <td>${item.order}</td>
+                    <td>${formatDate(item.orderDate)}</td>
+                    <td><button onclick="deleteItem(${index})">Видалити</button></
+                    </td>
+        `;
+        document.getElementById("items").appendChild(row);
+    }
+
+    function deleteItem(index) {
+        items.splice(index, 1);
+        document.getElementById("items").innerHTML = "";
+        items.forEach(renderItem);
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? dateString : date.toLocaleDateString("uk-UA");
+    }
+
+    function isItemExpired(item) {
+        const oneYear = 1000 * 60 * 60 * 24 * 365;
+        const creationDate = new Date(item.date);
+        return Date.now() - creationDate.getTime() > oneYear;
+    }
+</script>
+</body>
+</html>
